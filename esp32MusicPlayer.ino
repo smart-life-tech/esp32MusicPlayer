@@ -33,9 +33,9 @@ uint8_t txValue = 0;
 // See the following for generating UUIDs:
 // https://www.uuidgenerator.net/
 
-#define SERVICE_UUID           "6E400001-B5A3-F393-E0A9-E50E24DCCA9E" // UART service UUID
-#define CHARACTERISTIC_UUID_RX "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
-#define CHARACTERISTIC_UUID_TX "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
+#define SERVICE_UUID           "00001234-0000-1000-8000-00805f9b34fb" // UART service UUID
+#define CHARACTERISTIC_UUID_RX "00001235-0000-1000-8000-00805f9b34fb"
+#define CHARACTERISTIC_UUID_TX "00001236-0000-1000-8000-00805f9b34fb"
 
 
 class MyServerCallbacks: public BLEServerCallbacks {
