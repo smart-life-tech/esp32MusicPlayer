@@ -9,7 +9,8 @@ BLECharacteristic *pTxCharacteristic;
 bool deviceConnected = false;
 bool oldDeviceConnected = false;
 uint8_t txValue = 0;
-
+String receivedString;
+String musicName = "";
 #define SERVICE_UUID "00001234-0000-1000-8000-00805f9b34fb" // UART service UUID
 #define CHARACTERISTIC_UUID_RX "00001235-0000-1000-8000-00805f9b34fb"
 #define CHARACTERISTIC_UUID_TX "00001236-0000-1000-8000-00805f9b34fb"
@@ -40,13 +41,21 @@ class MyCallbacks : public BLECharacteristicCallbacks
       Serial.println("*********");
       Serial.print("Received Value: ");
       for (int i = 0; i < rxValue.length(); i++)
+      {
         Serial.print(rxValue[i]);
+        receivedString += rxValue[i];
+      }
 
       Serial.println();
       Serial.println("*********");
-
+      if (receivedString.indexOf("NAME") > -1)
+      {
+        musicName = receivedString.substring(receivedString.indexOf("NAME"));
+        Serial.println(musicName);
+      }
       // Save the received data to a file on the SD card
-      File dataFile = SD.open("received.mp3", FILE_WRITE);
+      // File dataFile = SD.open("received.mp3", FILE_WRITE);
+      File dataFile = SD.open(musicName, FILE_WRITE);
       if (dataFile)
       {
         for (int i = 0; i < rxValue.length(); i++)
@@ -58,6 +67,7 @@ class MyCallbacks : public BLECharacteristicCallbacks
       {
         Serial.println("Error opening file");
       }
+      receivedString = "";
     }
   }
 };
@@ -70,8 +80,9 @@ void setup()
   if (!SD.begin(chipSelect))
   {
     Serial.println("SD card initialization failed!");
-    while (1)
-      ; // Halt the program
+    return;
+    // while (1)
+    //   ; // Halt the program
   }
   Serial.println("SD card initialized successfully");
 

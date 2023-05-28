@@ -67,6 +67,12 @@
 <button id="forward-button" onclick="sendCommand('forward')">Forward</button>
 <button id="back-button" onclick="sendCommand('back')">Back</button>
 <button id="enable-bt-button" onclick="sendCommand('enable')">enable bluetooth</button>
+<input type="text" id="music-name-input" placeholder="Enter music name">
+<button id="delete" onclick="sendCommand('delete')">delete music</button></br>
+
+<input type="text" id="music-name" placeholder="Enter music name">
+
+<button id="name" onclick="sendCommand('NAME')">name music to be sent</button>
 <script>
     let characteristic;
     let notification = new Notification("Sending File", {
@@ -102,6 +108,7 @@
                 document.getElementById('pause-button').disabled = false;
                 document.getElementById('forward-button').disabled = false;
                 document.getElementById('back-button').disabled = false;
+                document.getElementById('delete').disabled = false;
             })
             .catch(error => {
                 console.error(error);
@@ -172,10 +179,14 @@
             });
 
     }
-    function sendFile(){
+    function sendFile() {
         //notification.setProgress(progress);
     }
     function sendMP3() {
+        const musicNameInput = document.getElementById('music-name');
+        const musicName = musicNameInput.value;
+        sendCommand("music_name"+musicName)
+        console.log(musicName)
         // Read the selected MP3 file
         const fileInput = document.getElementById('mp3-file');
         const file = fileInput.files[0];
@@ -221,6 +232,7 @@
                     function writeChunk() {
 
                         if (offset >= data.byteLength) {
+                            sendCommand('done')
                             console.log('Sent MP3 file to Arduino');
                             return;
                         }
@@ -231,6 +243,7 @@
 
                         characteristic.writeValue(chunk)
                             .then(() => {
+
                                 console.log(`Sent ${chunk.byteLength} bytes to Arduino`);
                                 // Update the progress
                                 progress += 10;
@@ -295,15 +308,30 @@
 
     function sendCommand(command) {
         // Send the command to the Arduino
-        characteristic.writeValue(new TextEncoder().encode(command))
-            .then(() => {
-                console.log(`Sent command "${command}" to Arduino`);
-            })
-            .catch(error => {
-                console.error(error);
-            });
-    }
+        if (command === 'delete') {
+            const musicNameInput = document.getElementById('music-name-input');
+            const musicName = musicNameInput.value;
+            command="delete "+musicName
 
+        }
+        if (command === 'NAME') {
+            const musicNameInput = document.getElementById('music-name');
+            const musicName = musicNameInput.value;
+            command="NAME"+musicName
+
+        }
+        if (characteristic) {
+            characteristic.writeValue(new TextEncoder().encode(command))
+                .then(() => {
+                    console.log(`Sent command "${command}" to Arduino`);
+                })
+                .catch(error => {
+                    console.error(error);
+                });
+        } else {
+            console.log('No Bluetooth characteristic found.');
+        }
+    }
     // Check if Bluetooth is enabled when the page loads
     checkBluetoothEnabled()
         .then(() => {
