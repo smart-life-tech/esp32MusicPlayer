@@ -1,0 +1,329 @@
+<style>
+    button {
+        background-color: #4CAF50;
+        border: none;
+        color: white;
+        padding: 10px 20px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        margin: 10px;
+        cursor: pointer;
+        border-radius: 5px;
+    }
+
+    #connect-button {
+        background-color: #2196F3;
+    }
+
+    #send-button {
+        background-color: #f44336;
+    }
+
+    #play-button {
+        background-color: #FFC107;
+    }
+
+    #pause-button {
+        background-color: #FFC107;
+    }
+
+    #forward-button {
+        background-color: #FFC107;
+    }
+
+    #back-button {
+        background-color: #FFC107;
+    }
+
+    #enable-bt-button {
+        background-color: #7707ff;
+    }
+
+    input[type="file"] {
+        display: none;
+    }
+
+    label[for="mp3-file"] {
+        background-color: #4CAF50;
+        color: white;
+        padding: 10px 20px;
+        text-align: center;
+        display: inline-block;
+        font-size: 16px;
+        margin: 10px;
+        cursor: pointer;
+        border-radius: 5px;
+    }
+</style>
+
+<button id="connect-button" onclick="selectDevice()">Connect to BLUETOOTH</button>
+<label for="mp3-file">Select an MP3 file</label>
+<input type="file" id="mp3-file" accept=".mp3">
+<button id="send-button" onclick="sendMP3()">Send an MP3 file</button></br>
+<button id="play-button" onclick="sendCommand('play')">Play</button>
+<button id="pause-button" onclick="sendCommand('pause')">Pause</button>
+<button id="forward-button" onclick="sendCommand('forward')">Forward</button>
+<button id="back-button" onclick="sendCommand('back')">Back</button>
+<button id="enable-bt-button" onclick="sendCommand('enable')">enable bluetooth</button>
+<script>
+    let characteristic;
+    let notification = new Notification("Sending File", {
+        body: "Please wait while the file is being sent...",
+    });
+    let progress = 0;
+    function checkBluetoothEnabled() {
+        return new Promise((resolve, reject) => {
+            navigator.bluetooth.getAvailability()
+                .then(enabled => {
+                    if (enabled) {
+                        resolve();
+                    } else {
+                        reject();
+                    }
+                })
+                .catch(() => {
+                    reject();
+                });
+        });
+    }
+
+    function enableBluetooth() {
+        navigator.bluetooth.requestDevice({
+            acceptAllDevices: true
+        })
+            .then(() => {
+                console.log('Bluetooth is enabled');
+                document.getElementById('enable-bt-button').style.display = 'none';
+                document.getElementById('connect-button').style.display = 'block';
+                document.getElementById('send-button').disabled = false;
+                document.getElementById('play-button').disabled = false;
+                document.getElementById('pause-button').disabled = false;
+                document.getElementById('forward-button').disabled = false;
+                document.getElementById('back-button').disabled = false;
+            })
+            .catch(error => {
+                console.error(error);
+            });
+    }
+
+    /*   function selectDevice() {
+           //  navigator.bluetooth.requestDevice({
+           //    filters: [
+           //        { services: ['0000110e-0000-1000-8000-00805f9b34fb'] }
+           //    ]
+           //  })
+           navigator.bluetooth.requestDevice({ acceptAllDevices: true })
+               .then(device => {
+                   console.log(`Device name: ${device.name}`);
+                   console.log(`Device ID: ${device.id}`);
+                   // connect to device and send data
+               })
+               .catch(error => {
+                   if (error.code === 8) {
+                       console.log("User cancelled the device selection process.");
+                   } else {
+                       console.log(`Error: ${error}`);
+                   }
+               });
+       }*/
+
+    function selectDevice() {
+        navigator.bluetooth.requestDevice({
+            acceptAllDevices: true,
+
+            // filters: [{ services: ['00001236-0000-1000-8000-00805f9b34fb'] }],
+            optionalServices: ['00001236-0000-1000-8000-00805f9b34fb', '00001234-0000-1000-8000-00805f9b34fb', '00001235-0000-1000-8000-00805f9b34fb']
+
+        })
+            .then(device => {
+                console.log(`Device name: ${device.name}`);
+                console.log(`Device ID: ${device.id}`);
+                // connect to device and send data
+                device.gatt.connect()
+                    .then(server => {
+                        console.log('Connected to GATT server');
+                        return server.getPrimaryService('00001234-0000-1000-8000-00805f9b34fb');
+                    })
+                    .then(service => {
+                        console.log('Found service');
+                        return service.getCharacteristic('00001235-0000-1000-8000-00805f9b34fb');
+                    })
+                    .then(char => {
+                        console.log('Found characteristic');
+                        characteristic = char;
+                        document.getElementById('send-button').disabled = false;
+                        document.getElementById('play-button').disabled = false;
+                        document.getElementById('pause-button').disabled = false;
+                        document.getElementById('forward-button').disabled = false;
+                        document.getElementById('back-button').disabled = false;
+                    })
+                    .catch(error => {
+                        console.error(error);
+                    });
+            })
+            .catch(error => {
+                if (error.code === 8) {
+                    console.log("User cancelled the device selection process.");
+                } else {
+                    console.log(`Error: ${error}`);
+                }
+            });
+
+    }
+    function sendFile(){
+        //notification.setProgress(progress);
+    }
+    function sendMP3() {
+        // Read the selected MP3 file
+        const fileInput = document.getElementById('mp3-file');
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        reader.readAsArrayBuffer(file);
+        reader.onload = function () {
+            // Convert the ArrayBuffer to Uint8Array
+            const arrayBuffer = reader.result;
+            const data = new Uint8Array(arrayBuffer);
+
+            // Get the BluetoothRemoteGATTCharacteristic
+            const serviceUUID = '00001234-0000-1000-8000-00805f9b34fb';
+            const characteristicUUID = '00001235-0000-1000-8000-00805f9b34fb';
+            navigator.bluetooth.requestDevice({
+                acceptAllDevices: true,
+                optionalServices: ['00001236-0000-1000-8000-00805f9b34fb', '00001234-0000-1000-8000-00805f9b34fb', '00001235-0000-1000-8000-00805f9b34fb']
+            })
+                .then(device => {
+                    console.log(`Device name: ${device.name}`);
+                    console.log(`Device ID: ${device.id}`);
+                    return device.gatt.connect();
+                })
+                .then(server => {
+                    console.log('Connected to GATT server');
+                    return server.getPrimaryService(serviceUUID);
+                })
+                .then(service => {
+                    console.log('Retrieved service');
+                    return service.getCharacteristic(characteristicUUID);
+                })
+                .then(characteristic => {
+                    console.log('Retrieved characteristic');
+
+                    const options = {
+                        actions: [
+                            { type: 'progress', value: 0 }
+                        ]
+                    };
+
+                    const chunkSize = 512;
+                    let offset = 0;
+
+                    function writeChunk() {
+
+                        if (offset >= data.byteLength) {
+                            console.log('Sent MP3 file to Arduino');
+                            return;
+                        }
+
+                        const chunk = data.subarray(offset, offset + chunkSize);
+                        offset += chunkSize;
+
+
+                        characteristic.writeValue(chunk)
+                            .then(() => {
+                                console.log(`Sent ${chunk.byteLength} bytes to Arduino`);
+                                // Update the progress
+                                progress += 10;
+                                // Check if the file is completely sent
+                                if (progress >= 100) {
+                                    // Show a "done" notification
+                                    let doneNotification = new Notification("File Sent", {
+                                        body: "The file has been successfully sent.",
+                                    });
+
+                                    // Close the sending notification
+                                    notification.close();
+                                } else {
+                                    // Call the sendFile function again after a short delay
+                                    setTimeout(sendFile, 1000);
+                                }
+
+                                writeChunk();
+                            })
+                            .catch(error => {
+                                console.error(error);
+                            });
+                    }
+
+                    writeChunk();
+                })
+                .catch(error => {
+                    console.error(error);
+                });
+        };
+    }
+
+
+    /*function sendMP3() {
+        // Read the selected MP3 file
+        const fileInput = document.getElementById('mp3-file');
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        reader.readAsArrayBuffer(file);
+
+        reader.onload = function () {
+            // Convert the ArrayBuffer to Uint8Array
+            const arrayBuffer = reader.result;
+            const array = new Uint8Array(arrayBuffer);
+
+            // Check if characteristic is defined before calling writeValue
+            if (characteristic) {
+                // Send the MP3 file to the Arduino
+                characteristic.writeValue(array)
+                    .then(() => {
+                        console.log('Sent MP3 file to Arduino');
+                    })
+                    .catch(error => {
+                        console.error(error);
+                    });
+            } else {
+                console.log('Characteristic is not defined');
+            }
+        };
+    }*/
+
+
+    function sendCommand(command) {
+        // Send the command to the Arduino
+        characteristic.writeValue(new TextEncoder().encode(command))
+            .then(() => {
+                console.log(`Sent command "${command}" to Arduino`);
+            })
+            .catch(error => {
+                console.error(error);
+            });
+    }
+
+    // Check if Bluetooth is enabled when the page loads
+    checkBluetoothEnabled()
+        .then(() => {
+            console.log('Bluetooth is already enabled');
+            document.getElementById('enable-bt-button').style.display = 'block';
+            document.getElementById('connect-button').style.display = 'block';
+            document.getElementById('send-button').disabled = false;
+            document.getElementById('play-button').disabled = false;
+            document.getElementById('pause-button').disabled = false;
+            document.getElementById('forward-button').disabled = false;
+            document.getElementById('back-button').disabled = false;
+        })
+        .catch(() => {
+            console.log('Bluetooth is not enabled');
+            document.getElementById('enable-bt-button').style.display = 'block';
+            document.getElementById('connect-button').style.display = 'none';
+            document.getElementById('send-button').disabled = true;
+            document.getElementById('play-button').disabled = true;
+            document.getElementById('pause-button').disabled = true;
+            document.getElementById('forward-button').disabled = true;
+            document.getElementById('back-button').disabled = true;
+        });
+</script>
