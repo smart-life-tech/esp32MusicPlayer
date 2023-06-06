@@ -98,8 +98,8 @@ class MyCallbacks : public BLECharacteristicCallbacks
 
     if (rxValue.length() > 0)
     {
-      Serial.println("*********");
       Serial.print("Received Value: ");
+      Serial.println(rxValue.length());
       for (int i = 0; i < rxValue.length(); i++)
       {
         // Serial.print(rxValue[i]);
@@ -107,8 +107,9 @@ class MyCallbacks : public BLECharacteristicCallbacks
         // appendFile(SD, buf, rxValue[i]);
       }
       bool flag = true;
-      if (receivedString.indexOf("music_name") > -1)
+      if (receivedString.indexOf("MM") > -1)
       {
+        Serial.println("setting music name");
         musicName = receivedString.substring(receivedString.indexOf("music_name"));
         Serial.println(musicName);
         musicName = "/" + musicName;
@@ -116,9 +117,9 @@ class MyCallbacks : public BLECharacteristicCallbacks
         writeFile(SD, buf, " ");
         flag = false;
       }
-      else if (receivedString.indexOf("done") < 0)
+      else if (receivedString.indexOf("done") > -1)
       {
-
+        Serial.println("done");
         char receivedStrings[400];
         receivedString.toCharArray(receivedStrings, 400, 0);
         Serial.println(receivedStrings);
@@ -149,7 +150,7 @@ class MyCallbacks : public BLECharacteristicCallbacks
             Serial.println("Append failed");
           }
 
-          delay(50);
+         // delay(50);
           //====================================================================================
         }
         file.close();

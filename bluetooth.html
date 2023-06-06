@@ -183,10 +183,10 @@
         //notification.setProgress(progress);
     }
     function sendMP3() {
-        const musicNameInput = document.getElementById('music-name');
-        const musicName = musicNameInput.value;
-        sendCommand("music_name"+musicName)
-        console.log(musicName)
+        //const musicNameInput = document.getElementById('music-name');
+        //const musicName = musicNameInput.value;
+        //sendCommand("MM"+musicName)
+        //console.log(musicName)
         // Read the selected MP3 file
         const fileInput = document.getElementById('mp3-file');
         const file = fileInput.files[0];
@@ -317,7 +317,7 @@
         if (command === 'NAME') {
             const musicNameInput = document.getElementById('music-name');
             const musicName = musicNameInput.value;
-            command="NAME"+musicName
+            command="MMmusic_name"+musicName
 
         }
         if (characteristic) {
