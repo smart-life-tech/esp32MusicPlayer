@@ -3,7 +3,12 @@
 #include <BLEUtils.h>
 #include <BLE2902.h>
 #include <SD.h>
-
+// Digital I/O used
+#define SD_CS 5
+#define SPI_MOSI 23 // SD Card
+#define SPI_MISO 19
+#define SPI_SCK 18
+char buf[50];
 BLEServer *pServer = NULL;
 BLECharacteristic *pTxCharacteristic;
 bool deviceConnected = false;
@@ -15,7 +20,62 @@ String musicName = "";
 #define CHARACTERISTIC_UUID_RX "00001235-0000-1000-8000-00805f9b34fb"
 #define CHARACTERISTIC_UUID_TX "00001236-0000-1000-8000-00805f9b34fb"
 
-const int chipSelect = 10; // SD card module's chip select pin
+const int chipSelect = 5; // SD card module's chip select pin
+
+void appendFile(fs::FS &fs, const char *path, const char *message)
+{
+  Serial.printf("Appending to file: %s\n", path);
+
+  File file = fs.open(path, FILE_APPEND);
+  if (!file)
+  {
+    Serial.println("Failed to open file for appending");
+    return;
+  }
+  if (file.print(message))
+  {
+    Serial.println("Message appended");
+  }
+  else
+  {
+    Serial.println("Append failed");
+  }
+  file.close();
+}
+
+void deleteFile(fs::FS &fs, const char *path)
+{
+  Serial.printf("Deleting file: %s\n", path);
+  if (fs.remove(path))
+  {
+    Serial.println("File deleted");
+  }
+  else
+  {
+    Serial.println("Delete failed");
+  }
+}
+
+void writeFile(fs::FS &fs, const char *path, const char *message)
+{
+  Serial.printf("Writing file: %s\n", path);
+
+  File file = fs.open(path, FILE_WRITE);
+  if (!file)
+  {
+    Serial.println("Failed to open file for writing");
+    return;
+  }
+  if (file.print(message))
+  {
+    Serial.println("File written");
+  }
+  else
+  {
+    Serial.println("Write failed");
+  }
+  file.close();
+}
 
 class MyServerCallbacks : public BLEServerCallbacks
 {
@@ -42,30 +102,71 @@ class MyCallbacks : public BLECharacteristicCallbacks
       Serial.print("Received Value: ");
       for (int i = 0; i < rxValue.length(); i++)
       {
-        Serial.print(rxValue[i]);
+        // Serial.print(rxValue[i]);
         receivedString += rxValue[i];
+        // appendFile(SD, buf, rxValue[i]);
       }
-
-      Serial.println();
-      Serial.println("*********");
-      if (receivedString.indexOf("NAME") > -1)
+      bool flag = true;
+      if (receivedString.indexOf("music_name") > -1)
       {
-        musicName = receivedString.substring(receivedString.indexOf("NAME"));
+        musicName = receivedString.substring(receivedString.indexOf("music_name"));
         Serial.println(musicName);
+        musicName = "/" + musicName;
+        musicName.toCharArray(buf, 50, 0);
+        writeFile(SD, buf, " ");
+        flag = false;
       }
-      // Save the received data to a file on the SD card
-      // File dataFile = SD.open("received.mp3", FILE_WRITE);
-      File dataFile = SD.open(musicName, FILE_WRITE);
-      if (dataFile)
+      else if (receivedString.indexOf("done") < 0)
       {
+
+        char receivedStrings[400];
+        receivedString.toCharArray(receivedStrings, 400, 0);
+        Serial.println(receivedStrings);
+
+        Serial.println();
+        Serial.println("*********");
+        flag = false;
+      }
+      if (flag)
+      {
+        //================================================================================================
+        // File dataFile = SD.open(musicName, FILE_WRITE);
+        File file = SD.open(buf, FILE_APPEND);
+        if (!file)
+        {
+          Serial.println("Failed to open file for appending");
+          return;
+        }
         for (int i = 0; i < rxValue.length(); i++)
-          dataFile.write(rxValue[i]);
-        dataFile.close();
-        Serial.println("File saved successfully");
-      }
-      else
-      {
-        Serial.println("Error opening file");
+        {
+
+          if (file.print(rxValue[i]))
+          {
+            Serial.println("Message appended");
+          }
+          else
+          {
+            Serial.println("Append failed");
+          }
+
+          delay(50);
+          //====================================================================================
+        }
+        file.close();
+        // Save the received data to a file on the SD card
+        // File dataFile = SD.open(musicName, FILE_WRITE);
+        /*File dataFile = SD.open(musicName, FILE_WRITE);
+        if (dataFile)
+        {
+          for (int i = 0; i < rxValue.length(); i++)
+            dataFile.write(rxValue[i]);
+          dataFile.close();
+          Serial.println("File saved successfully");
+        }
+        else
+        {
+          Serial.println("Error opening file");
+        }*/
       }
       receivedString = "";
     }
@@ -75,7 +176,9 @@ class MyCallbacks : public BLECharacteristicCallbacks
 void setup()
 {
   Serial.begin(115200);
-
+  pinMode(SD_CS, OUTPUT);
+  digitalWrite(SD_CS, HIGH);
+  SPI.begin(SPI_SCK, SPI_MISO, SPI_MOSI);
   // Initialize the SD card
   if (!SD.begin(chipSelect))
   {

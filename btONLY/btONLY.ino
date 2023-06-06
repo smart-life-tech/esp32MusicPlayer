@@ -47,7 +47,7 @@ class MyCallbacks : public BLECharacteristicCallbacks
     void onWrite(BLECharacteristic *pCharacteristic)
     {
         std::string rxValue = pCharacteristic->getValue();
-
+        receivedString = "";
         if (rxValue.length() > 0)
         {
             Serial.println("*********");
@@ -61,8 +61,14 @@ class MyCallbacks : public BLECharacteristicCallbacks
             Serial.println("*********");
             if (receivedString.indexOf("NAME") > -1)
             {
-                musicName = receivedString.substring(receivedString.indexOf("NAME"));
+                musicName = receivedString.substring(receivedString.indexOf("NAME") + 4);
                 Serial.println(musicName);
+            }
+            if (receivedString.indexOf("delete") > -1)
+            {
+                musicName = receivedString.substring(receivedString.indexOf("NAME") + 6);
+                Serial.println(musicName);
+                
             }
         }
     }
