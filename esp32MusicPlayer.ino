@@ -112,7 +112,7 @@ class MyCallbacks : public BLECharacteristicCallbacks
         Serial.println("setting music name");
         musicName = receivedString.substring(receivedString.indexOf("music_name"));
         Serial.println(musicName);
-        musicName = "/" + musicName;
+        musicName = "/" + musicName+".mp3";
         musicName.toCharArray(buf, 50, 0);
         writeFile(SD, buf, " ");
         flag = false;
