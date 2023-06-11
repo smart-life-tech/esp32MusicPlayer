@@ -27,7 +27,7 @@ bool deviceConnected = false;
 bool oldDeviceConnected = false;
 uint8_t txValue = 0;
 String receivedString;
-String musicName = "";
+String musicName = "/mesound.mp3";
 String command = "play";
 bool playing = true;
 std::string oldrx = "";
@@ -123,10 +123,10 @@ class MyCallbacks : public BLECharacteristicCallbacks
                 // appendFile(SD, buf, rxValue[i]);
             }
             bool flag = true;
-            if (receivedString.indexOf("MM") > -1)
+            if (receivedString.indexOf("M--@-===M") > -1)
             {
                 Serial.println("setting music name");
-                musicName = receivedString.substring(receivedString.indexOf("music_name") + 12);
+                musicName = receivedString.substring(receivedString.indexOf("music_name") + 18);
                 Serial.println(musicName);
                 musicName = "/" + musicName + ".mp3";
                 musicName.toCharArray(buf, 50, 0);
@@ -248,6 +248,8 @@ class MyCallbacks : public BLECharacteristicCallbacks
 };
 unsigned long timeNow = 0;
 unsigned long times = 0;
+String fileNames[100]; // Maximum of 100 file names, adjust as per your needs
+
 void setup()
 {
     Serial.begin(115200);
@@ -263,7 +265,34 @@ void setup()
         //   ; // Halt the program
     }
     Serial.println("SD card initialized successfully");
+    // Read file names and save them in an array
+    File directory = SD.open("/");
+    int fileCount = 0;
 
+    while (true)
+    {
+        File entry = directory.openNextFile();
+        if (!entry)
+        {
+            Serial.println("no more files");
+            break; // No more files
+        }
+        if (entry.isDirectory())
+        {
+            continue; // Skip directories
+        }
+        fileNames[fileCount] = entry.name();
+        fileCount++;
+        entry.close();
+    }
+    directory.close();
+
+    // Print the file names
+    Serial.println("List of files:");
+    for (int i = 0; i < fileCount; i++)
+    {
+        Serial.println(fileNames[i]);
+    }
     //   Create the BLE Device
     BLEDevice::init("JM Music Player");
     // delay(10000);
@@ -303,80 +332,24 @@ void loop()
     while (playing)
     {
         audio.loop();
-        /*if (millis() - times > 5000)
+        if (millis() - times > 5000)
         {
             times = millis();
             reads();
-        }*/
+        }
     }
     while (!playing)
     {
         reads();
         if (millis() - timeNow > 2000)
         {
-            playing = true;
+            if (playing == true)
+                break;
+            // audio.connecttoFS(SD, "/music_namenewest.mp3");
+            // audio.pauseResume();
         }
     }
 }
-
-/*  reads();
-  if (command == "play")
-  {
-      audio.loop();
-      // Serial.println("playing audio");
-  }
-  else if (command = "pause")
-  {
-      audio.stopSong();
-      Serial.println("pausing audio");
-  }
-  else if (command = "forward")
-  {
-      int timenow = audio.getAudioCurrentTime();
-      if ((audio.getAudioCurrentTime() + 10) <= audio.getAudioFileDuration())
-      {
-          audio.setAudioPlayPosition(timenow + 10);
-          Serial.println("forward audio");
-          command = "play";
-      }
-  }
-  else if (command = "backward")
-  {
-      Serial.println("back audio");
-      int timenow = audio.getAudioCurrentTime();
-      if (timenow > 10)
-      {
-          audio.setAudioPlayPosition(timenow - 10);
-          command = "play";
-      }
-  }
-  else if (command = "delete")
-  {
-      Serial.println("deleting audio");
-      deleteFile(SD, buf);
-      command = "play";
-  }
-  if (deviceConnected)
-  {
-      pTxCharacteristic->setValue(&txValue, 1);
-      pTxCharacteristic->notify();
-      txValue++;
-      delay(10);
-  }
-
-  if (!deviceConnected && oldDeviceConnected)
-  {
-      delay(500);                  // Give the Bluetooth stack time to get ready
-      pServer->startAdvertising(); // Restart advertising
-      Serial.println("Start advertising");
-      oldDeviceConnected = deviceConnected;
-  }
-
-  if (deviceConnected && !oldDeviceConnected)
-  {
-      // Do stuff here on connecting
-      oldDeviceConnected = deviceConnected;
-  }*/
 // delay(1000);
 void reads()
 {
@@ -397,14 +370,14 @@ void reads()
             // appendFile(SD, buf, rxValue[i]);
         }
         bool flag = true;
-        if (receivedString.indexOf("MM") > -1)
+        if (receivedString.indexOf("M--@-===M") > -1)
         {
             Serial.println("setting music name");
-            musicName = receivedString.substring(receivedString.indexOf("music_name") + 9);
+            musicName = receivedString.substring(receivedString.indexOf("music_name") + 8);
             Serial.println(musicName);
             musicName = "/" + musicName + ".mp3";
             musicName.toCharArray(buf, 50, 0);
-            writeFile(SD, buf, " ");
+            // writeFile(SD, buf, " ");
             flag = false;
         }
         else if (receivedString.indexOf("done") > -1)
@@ -423,6 +396,7 @@ void reads()
             Serial.println("play");
             Serial.println(buf);
             audio.connecttoFS(SD, buf);
+            playing = true;
             char receivedStrings[400];
             receivedString.toCharArray(receivedStrings, 400, 0);
             Serial.println(receivedStrings);
@@ -497,7 +471,7 @@ void reads()
                     Serial.println("Append failed");
                 }
 
-                // delay(50);
+                 delay(5);
                 //====================================================================================
             }
             file.close();
@@ -516,9 +490,74 @@ void reads()
               Serial.println("Error opening file");
             }*/
         }
+        else
+        {
+            commands();
+        }
         // ...
         // pRxCharacteristic->setValue(data64);
         rxValue = "";
         receivedString = "";
+    }
+}
+
+void commands()
+{
+
+    if (command == "pause")
+    {
+        Serial.println("pausing audio");
+    }
+    else if (command == "forward")
+    {
+        int timenow = audio.getAudioCurrentTime();
+        if ((audio.getAudioCurrentTime() + 10) <= audio.getAudioFileDuration())
+        {
+            audio.setAudioPlayPosition(timenow + 10);
+            Serial.println("forward audio");
+            command = "play";
+        }
+    }
+    else if (command == "backward")
+    {
+        Serial.println("back audio");
+        int timenow = audio.getAudioCurrentTime();
+        if (timenow > 10)
+        {
+            audio.setAudioPlayPosition(timenow - 10);
+            command = "play";
+        }
+    }
+    else if (command == "delete")
+    {
+        Serial.println("deleting audio");
+        deleteFile(SD, buf);
+        command = "play";
+    }
+    if (command == "play")
+    {
+        playing = true;
+        Serial.println("playing audio");
+    }
+    if (deviceConnected)
+    {
+      //  pTxCharacteristic->setValue(&txValue, 1);
+        pTxCharacteristic->notify();
+        txValue++;
+        delay(10);
+    }
+
+    if (!deviceConnected && oldDeviceConnected)
+    {
+        delay(500);                  // Give the Bluetooth stack time to get ready
+        pServer->startAdvertising(); // Restart advertising
+        Serial.println("Start advertising");
+        oldDeviceConnected = deviceConnected;
+    }
+
+    if (deviceConnected && !oldDeviceConnected)
+    {
+        // Do stuff here on connecting
+        oldDeviceConnected = deviceConnected;
     }
 }
