@@ -68,7 +68,6 @@ class MyCallbacks : public BLECharacteristicCallbacks
             {
                 musicName = receivedString.substring(receivedString.indexOf("NAME") + 6);
                 Serial.println(musicName);
-                
             }
         }
     }
@@ -91,13 +90,13 @@ void setup()
     // Create a BLE Characteristic
     pTxCharacteristic = pService->createCharacteristic(
         CHARACTERISTIC_UUID_TX,
-        BLECharacteristic::PROPERTY_NOTIFY);
+          BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE |BLECharacteristic::PROPERTY_NOTIFY);
 
     pTxCharacteristic->addDescriptor(new BLE2902());
 
     BLECharacteristic *pRxCharacteristic = pService->createCharacteristic(
         CHARACTERISTIC_UUID_RX,
-        BLECharacteristic::PROPERTY_WRITE);
+        BLECharacteristic::PROPERTY_READ | BLECharacteristic::PROPERTY_WRITE | BLECharacteristic::PROPERTY_NOTIFY);
 
     pRxCharacteristic->setCallbacks(new MyCallbacks());
 
@@ -123,7 +122,7 @@ void loop()
     // disconnecting
     if (!deviceConnected && oldDeviceConnected)
     {
-        delay(500);                  // give the bluetooth stack the chance to get things ready
+        delay(1000);                 // give the bluetooth stack the chance to get things ready
         pServer->startAdvertising(); // restart advertising
         Serial.println("start advertising");
         oldDeviceConnected = deviceConnected;

@@ -32,10 +32,11 @@ void setup()
   }
   audio.setPinout(I2S_BCLK, I2S_LRC, I2S_DOUT);
   audio.setVolume(15); // 0...21
-  audio.connecttoFS(SD, "/Amaze.mp3");
+  audio.connecttoFS(SD, "/music_namenewest.mp3");
 }
 
 void loop()
 {
   audio.loop();
+  //audio.pauseResume();
 }

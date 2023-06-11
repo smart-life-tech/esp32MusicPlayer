@@ -71,8 +71,8 @@
 <button id="delete" onclick="sendCommand('delete')">delete music</button></br>
 
 <input type="text" id="music-name" placeholder="Enter music name">
+<button id="name" onclick="sendCommand('NAME')">name of music to be sent/played</button>
 
-<button id="name" onclick="sendCommand('NAME')">name music to be sent</button>
 <script>
     let characteristic;
     let notification = new Notification("Sending File", {
@@ -135,6 +135,16 @@
                    }
                });
        }*/
+    function subscribeToNotifications(characteristic) {
+        characteristic.addEventListener('characteristicvaluechanged', handleCharacteristicValueChanged);
+        return characteristic.startNotifications();
+    }
+
+    function handleCharacteristicValueChanged(event) {
+        // Handle the received value here
+        const value = event.target.value;
+        // Process the received value as needed
+    }
 
     function selectDevice() {
         navigator.bluetooth.requestDevice({
@@ -165,6 +175,7 @@
                         document.getElementById('pause-button').disabled = false;
                         document.getElementById('forward-button').disabled = false;
                         document.getElementById('back-button').disabled = false;
+                        //subscribeToNotifications(characteristic);
                     })
                     .catch(error => {
                         console.error(error);
@@ -307,21 +318,27 @@
 
 
     function sendCommand(command) {
-        // Send the command to the Arduino
+        // Get the BluetoothRemoteGATTCharacteristi
+
+
+        // device.gatt.connect();
+
         if (command === 'delete') {
             const musicNameInput = document.getElementById('music-name-input');
             const musicName = musicNameInput.value;
-            command="delete "+musicName
+            command = "delete " + musicName
 
         }
         if (command === 'NAME') {
             const musicNameInput = document.getElementById('music-name');
             const musicName = musicNameInput.value;
-            command="MMmusic_name"+musicName
+            command = "MMmusic_name" + musicName
 
         }
         if (characteristic) {
+
             characteristic.writeValue(new TextEncoder().encode(command))
+            
                 .then(() => {
                     console.log(`Sent command "${command}" to Arduino`);
                 })
@@ -331,6 +348,7 @@
         } else {
             console.log('No Bluetooth characteristic found.');
         }
+        // })
     }
     // Check if Bluetooth is enabled when the page loads
     checkBluetoothEnabled()
