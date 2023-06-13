@@ -75,6 +75,7 @@
 
 <script>
     let characteristic;
+    var counter = 0;
     let notification = new Notification("Sending File", {
         body: "Please wait while the file is being sent...",
     });
@@ -323,6 +324,7 @@
 
         // device.gatt.connect();
 
+
         if (command === 'delete') {
             const musicNameInput = document.getElementById('music-name-input');
             const musicName = musicNameInput.value;
@@ -336,9 +338,9 @@
 
         }
         if (characteristic) {
+            counter++;
+            characteristic.writeValue(new TextEncoder().encode(counter+command))
 
-            characteristic.writeValue(new TextEncoder().encode(command))
-            
                 .then(() => {
                     console.log(`Sent command "${command}" to Arduino`);
                 })

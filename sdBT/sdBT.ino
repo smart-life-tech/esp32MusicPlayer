@@ -229,132 +229,141 @@ void loop()
 void reads()
 {
     std::string rxValue = pRxCharacteristic->getValue();
-    if (rxValue.length() < 300)
+    if (rxValue.length() > 300)
+        sending = true;
+    if (rxValue.length() < 300 && oldrx != rxValue)
     {
-        if (rxValue.length() > 0 && oldrx != rxValue)
+        timeNow = 0;
+        oldrx = rxValue;
+        playing = false;
+        sending = false;
+        // Process the received value
+        Serial.print("Received Value: ");
+        Serial.println(rxValue.length());
+
+        flag = true;
+
+        for (int i = 0; i < rxValue.length(); i++)
         {
-            timeNow = 0;
-            oldrx = rxValue;
-            playing = false;
-            // Process the received value
-            Serial.print("Received Value: ");
-            Serial.println(rxValue.length());
-
-            flag = true;
-
-            for (int i = 0; i < rxValue.length(); i++)
+            // Serial.print(rxValue[i]);
+            receivedString += rxValue[i];
+            // appendFile(SD, buf, rxValue[i]);
+        }
+        if (receivedString.indexOf("M--@-===M") > -1)
+        {
+            Serial.println("setting music name");
+            musicName = receivedString.substring(receivedString.indexOf("music_name") + 10);
+            Serial.println(musicName);
+            musicName = "/" + musicName + ".mp3";
+            musicName.toCharArray(buf, 50, 0);
+            bool check = true;
+            sending = true;
+            readfiles();
+            for (int i = 0; i < fileCount + 1; i++)
             {
-                // Serial.print(rxValue[i]);
-                receivedString += rxValue[i];
-                // appendFile(SD, buf, rxValue[i]);
-            }
-            if (receivedString.indexOf("M--@-===M") > -1)
-            {
-                Serial.println("setting music name");
-                musicName = receivedString.substring(receivedString.indexOf("music_name") + 10);
-                Serial.println(musicName);
-                musicName = "/" + musicName + ".mp3";
-                musicName.toCharArray(buf, 50, 0);
-                bool check = true;
-                sending = true;
-                readfiles();
-                for (int i = 0; i < fileCount + 1; i++)
+                if (musicName.substring(1) == fileNames[i])
                 {
-                    if (musicName.substring(1) == fileNames[i])
-                    {
-                        check = false;
-                        Serial.print("musicName: ");
-                        Serial.println(musicName.substring(1));
-                        Serial.print("fileName: ");
-                        Serial.println(fileNames[i]);
-                        break;
-                    }
+                    check = false;
+                    Serial.print("musicName: ");
+                    Serial.println(musicName.substring(1));
+                    Serial.print("fileName: ");
+                    Serial.println(fileNames[i]);
+                    break;
                 }
-                if (check)
-                {
-                    Serial.println("name does not exist creating on sd card");
-                    writeFile(SD, buf, " ");
-                }
-                flag = false;
             }
-            else if (receivedString.indexOf("done") > -1)
+            if (check)
             {
-                Serial.println("done");
-                char receivedStrings[400];
-                receivedString.toCharArray(receivedStrings, 400, 0);
-                Serial.println(receivedStrings);
+                Serial.println("name does not exist creating on sd card");
+                writeFile(SD, buf, " ");
+            }
+            flag = false;
+        }
+        else if (receivedString.indexOf("done") > -1)
+        {
+            Serial.println("done");
+            char receivedStrings[400];
+            receivedString.toCharArray(receivedStrings, 400, 0);
+            Serial.println(receivedStrings);
 
-                Serial.println();
-                Serial.println("*********");
-                sending = false;
-                flag = false;
-            }
-            else if (receivedString.indexOf("play") > -1)
-            {
-                Serial.println("play");
-                Serial.println(buf);
-                audio.connecttoFS(SD, buf);
-                playing = true;
-                char receivedStrings[400];
-                receivedString.toCharArray(receivedStrings, 400, 0);
-                Serial.println(receivedStrings);
-                Serial.println();
-                command = "play";
-                Serial.println("*********");
-                flag = false;
-            }
-            else if (receivedString.indexOf("pause") > -1)
-            {
-                Serial.println("pause");
-                char receivedStrings[400];
-                receivedString.toCharArray(receivedStrings, 400, 0);
-                Serial.println(receivedStrings);
-                command = "pause";
-                playingTime = audio.getAudioCurrentTime();
-                audio.setAudioPlayPosition(playingTime);
-                Serial.print("current time");
-                Serial.println(playingTime);
-                Serial.println();
-                Serial.println("*********");
-                flag = false;
-            }
-            else if (receivedString.indexOf("forward") > -1)
-            {
-                Serial.println("forward");
-                char receivedStrings[400];
-                receivedString.toCharArray(receivedStrings, 400, 0);
-                Serial.println(receivedStrings);
-                command = "forward";
-                Serial.println();
-                Serial.println("*********");
-                flag = false;
-            }
-            else if (receivedString.indexOf("backward") > -1)
-            {
-                Serial.println("backward");
-                char receivedStrings[400];
-                receivedString.toCharArray(receivedStrings, 400, 0);
-                Serial.println(receivedStrings);
-                command = "backward";
-                Serial.println();
-                Serial.println("*********");
-                flag = false;
-            }
-            else if (receivedString.indexOf("delete") > -1)
-            {
-                Serial.println("delete");
-                char receivedStrings[400];
-                receivedString.toCharArray(receivedStrings, 400, 0);
-                Serial.println(receivedStrings);
-                command = "delete";
-                Serial.println();
-                Serial.println("*********");
-                flag = false;
-            }
+            Serial.println();
+            Serial.println("*********");
+            sending = false;
+            flag = false;
+        }
+        else if (receivedString.indexOf("play") > -1)
+        {
+            Serial.println("play");
+            Serial.println(buf);
+            audio.connecttoFS(SD, buf);
+            playing = true;
+            char receivedStrings[400];
+            receivedString.toCharArray(receivedStrings, 400, 0);
+            Serial.println(receivedStrings);
+            Serial.println();
+            command = "play";
+            Serial.println("*********");
+            flag = false;
+        }
+        else if (receivedString.indexOf("pause") > -1)
+        {
+            Serial.println("pause");
+            char receivedStrings[400];
+            receivedString.toCharArray(receivedStrings, 400, 0);
+            Serial.println(receivedStrings);
+            command = "pause";
+            playingTime = audio.getAudioCurrentTime();
+            audio.setAudioPlayPosition(playingTime);
+            Serial.print("current time");
+            Serial.println(playingTime);
+            Serial.println();
+            Serial.println("*********");
+            flag = false;
+        }
+        else if (receivedString.indexOf("forward") > -1)
+        {
+            Serial.println("forward");
+            char receivedStrings[400];
+            receivedString.toCharArray(receivedStrings, 400, 0);
+            Serial.println(receivedStrings);
+            command = "forward";
+            Serial.println();
+            Serial.println("*********");
+            flag = false;
+        }
+        else if (receivedString.indexOf("backward") > -1)
+        {
+            Serial.println("backward");
+            char receivedStrings[400];
+            receivedString.toCharArray(receivedStrings, 400, 0);
+            Serial.println(receivedStrings);
+            command = "backward";
+            Serial.println();
+            Serial.println("*********");
+            flag = false;
+        }
+        else if (receivedString.indexOf("delete") > -1)
+        {
+            Serial.println("delete");
+            char receivedStrings[400];
+            receivedString.toCharArray(receivedStrings, 400, 0);
+            Serial.println(receivedStrings);
+            command = "delete";
+            Serial.println();
+            Serial.println("*********");
+            flag = false;
+        }
+        if (!flag)
+        {
+            commands();
         }
     }
-    if (rxValue.length() > 300 && sending)
+
+    else if (rxValue.length() > 300 && sending && oldrx != rxValue)
     {
+        timeNow = 0;
+        oldrx = rxValue;
+        playing = false;
+        // sending = false;
         File file = SD.open(buf, FILE_APPEND);
         if (!file)
         {
@@ -376,6 +385,8 @@ void reads()
             // delay(5);
             //====================================================================================
         }
+        sending = false;
+        playing = false;
         Serial.println("saved");
         file.close();
         // Save the received data to a file on the SD card
@@ -393,10 +404,7 @@ void reads()
           Serial.println("Error opening file");
         }*/
     }
-    if (!flag)
-    {
-        commands();
-    }
+
     // ...
     // pRxCharacteristic->setValue(data64);
     rxValue = "";
