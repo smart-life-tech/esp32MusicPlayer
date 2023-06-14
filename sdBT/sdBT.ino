@@ -33,6 +33,7 @@ bool playing = true;
 bool sending = true;
 unsigned long playingTime = 0;
 std::string oldrx = "";
+std::string vals = "";
 bool flag = true;
 #define SERVICE_UUID "00001234-0000-1000-8000-00805f9b34fb" // UART service UUID
 #define CHARACTERISTIC_UUID_RX "00001235-0000-1000-8000-00805f9b34fb"
@@ -361,6 +362,7 @@ void reads()
     else if (rxValue.length() > 300 && sending && oldrx != rxValue)
     {
         timeNow = 0;
+        pRxCharacteristic->setValue(vals);
         oldrx = rxValue;
         playing = false;
         // sending = false;
