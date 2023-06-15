@@ -18,7 +18,7 @@
 #define I2S_LRC 26
 
 Audio audio;
-
+bool paused = false;
 char buf[50];
 BLEServer *pServer = NULL;
 BLECharacteristic *pRxCharacteristic;
@@ -295,8 +295,20 @@ void reads()
         {
             Serial.println("play");
             Serial.println(buf);
-            audio.connecttoFS(SD, buf);
+            if (!paused)
+            {
+                audio.connecttoFS(SD, buf);
+            }
+            else
+            {
+                // audio.pauseResume();
+                Serial.print("started plaing at :");
+                Serial.println(playingTime);
+                audio.connecttoFS(SD, buf);
+                audio.setAudioPlayPosition(playingTime);
+            }
             playing = true;
+            paused = false;
             char receivedStrings[400];
             receivedString.toCharArray(receivedStrings, 400, 0);
             Serial.println(receivedStrings);
@@ -308,12 +320,14 @@ void reads()
         else if (receivedString.indexOf("pause") > -1)
         {
             Serial.println("pause");
+            paused = true;
             char receivedStrings[400];
             receivedString.toCharArray(receivedStrings, 400, 0);
             Serial.println(receivedStrings);
             command = "pause";
             playingTime = audio.getAudioCurrentTime();
             audio.setAudioPlayPosition(playingTime);
+            // audio.stopSong();
             Serial.print("current time");
             Serial.println(playingTime);
             Serial.println();
@@ -362,7 +376,7 @@ void reads()
     else if (rxValue.length() > 300 && sending && oldrx != rxValue)
     {
         timeNow = 0;
-        pRxCharacteristic->setValue(vals);
+
         oldrx = rxValue;
         playing = false;
         // sending = false;
@@ -405,6 +419,8 @@ void reads()
         {
           Serial.println("Error opening file");
         }*/
+        pRxCharacteristic->setValue(vals);
+        delay(50);
     }
 
     // ...
