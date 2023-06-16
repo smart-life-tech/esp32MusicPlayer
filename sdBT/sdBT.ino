@@ -6,7 +6,9 @@
 #include "Arduino.h"
 #include "Audio.h"
 #include "FS.h"
+#include "BluetoothA2DPSink.h"
 
+BluetoothA2DPSink a2dp_sink;
 // Digital I/O used
 #define SD_CS 5
 #define SPI_MOSI 23 // SD Card
