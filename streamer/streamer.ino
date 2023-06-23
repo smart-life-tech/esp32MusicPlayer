@@ -9,11 +9,11 @@ void setup()
         .ws_io_num = 26,
         .data_out_num = 25,
         .data_in_num = I2S_PIN_NO_CHANGE};
+    a2dp_sink.set_volume(127);
     a2dp_sink.set_pin_config(my_pin_config);
     a2dp_sink.start("JM Music Player");
 }
 
 void loop()
 {
-    
 }
