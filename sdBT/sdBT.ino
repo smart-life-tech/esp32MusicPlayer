@@ -1,11 +1,14 @@
+#define speaker // if this is defined as player this will onlu play as streamer from the bluetooth
+               // if this is defined as speaker it will be able to stream
+               // from sd card and also be able to use mucic control interface
 #include <BLEDevice.h>
 #include <BLEServer.h>
 #include <BLEUtils.h>
 #include <BLE2902.h>
 #include <SD.h>
-#include "Arduino.h"
-#include "Audio.h"
-#include "FS.h"
+#include <Arduino.h>
+#include <Audio.h>
+#include <FS.h>
 #include "BluetoothA2DPSink.h"
 
 BluetoothA2DPSink a2dp_sink;
@@ -153,6 +156,7 @@ void readfiles()
 void setup()
 {
     Serial.begin(115200);
+#ifdef speaker
     pinMode(SD_CS, OUTPUT);
     digitalWrite(SD_CS, HIGH);
     SPI.begin(SPI_SCK, SPI_MISO, SPI_MOSI);
@@ -201,10 +205,22 @@ void setup()
                          // audio.connecttoFS(SD, "/music_namenewest.mp3");
     musicName = "/" + musicName + ".mp3";
     musicName.toCharArray(buf, 50, 0);
+#endif
+#ifdef player
+    i2s_pin_config_t my_pin_config = {
+        .bck_io_num = 27,   // green
+        .ws_io_num = 26,    // blue
+        .data_out_num = 25, // black
+        .data_in_num = I2S_PIN_NO_CHANGE};
+    a2dp_sink.set_volume(127);
+    a2dp_sink.set_pin_config(my_pin_config);
+    a2dp_sink.start("JM Music Player");
+#endif
 }
 
 void loop()
 {
+#ifdef speaker
     while (playing)
     {
         audio.loop();
@@ -227,6 +243,7 @@ void loop()
             // audio.pauseResume();
         }
     }
+#endif
 }
 // delay(1000);
 void reads()
