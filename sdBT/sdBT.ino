@@ -164,7 +164,7 @@ void setup()
     if (!SD.begin(chipSelect))
     {
         Serial.println("SD card initialization failed!");
-        return;
+       // return;
         // while (1)
         //   ; // Halt the program
     }
